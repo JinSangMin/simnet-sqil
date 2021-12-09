@@ -31,3 +31,4 @@ agents_mask/
 
 examples/simulation/scenes/
 examples/simulation/expert_buffer/
+examples/simulation/logs/

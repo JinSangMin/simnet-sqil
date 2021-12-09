@@ -10,7 +10,7 @@ model_params:
   history_num_frames: 1
   future_num_frames: 50
   step_time: 0.1
-  render_ego_history: False
+  render_ego_history: True
 
 
 ###################

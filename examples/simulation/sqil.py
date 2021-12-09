@@ -51,7 +51,6 @@ class Memory(object):
 
     def save(self, path):
         b = np.asarray(self.buffer)
-        print(b.shape)
         np.save(path, b)
 
     def generate_action_space(self, ex):
@@ -114,10 +113,10 @@ class SoftQNetwork(nn.Module):
         # print('state : ', state)
         with torch.no_grad():
             try:
-                q = self.forward(state)
-                v = self.getV(q).squeeze()
+                q_ = self.forward(state)
+                v_ = self.getV(q_).squeeze()
                 # print('q & v', q, v)
-                dist = torch.exp((q-v)/self.alpha)
+                dist = torch.exp((q_-v_)/self.alpha)
                 # print(dist)
                 dist = dist / (torch.sum(dist))
                 # print(dist)
@@ -132,7 +131,7 @@ if __name__ == "__main__":
     # env = gym.make('CartPole-v0')
     env_config_path = 'gym_config.yaml'
     rollout_sim_cfg = SimulationConfigGym()
-    rollout_sim_cfg.num_simulation_steps = None
+    # rollout_sim_cfg.num_simulation_steps = None
     os.environ["L5KIT_DATA_FOLDER"] = "."
     env = gym.make("L5-CLE-v0", env_config_path=env_config_path, sim_cfg=rollout_sim_cfg, \
                        use_kinematic=True, train=False, return_info=True, sqil=(NUM_STEER, NUM_ACCEL))
@@ -150,8 +149,7 @@ if __name__ == "__main__":
 
     # 1. load expert replay
     expert_memory_replay = Memory(REPLAY_MEMORY//2)
-    # pdb.set_trace()
-    expert_memory_replay.load('expert_replay_approx_channel7_im112_sample')
+    expert_memory_replay.load('expert_buffer/expert_replay_approx_channel7_im112_sample')
     accel_as = expert_memory_replay.a_as
     steer_as = expert_memory_replay.s_as
     online_memory_replay = Memory(REPLAY_MEMORY//2)
@@ -164,7 +162,7 @@ if __name__ == "__main__":
     for epoch in count():
         state = env.reset()
         episode_reward = 0
-        for time_steps in range(200):
+        for time_steps in range(20):
             
             action_index_comp = onlineQNetwork.choose_action(state['image'])
             action_index = (action_index_comp // NUM_STEER, action_index_comp % NUM_STEER) # (accel, steer)
@@ -176,6 +174,10 @@ if __name__ == "__main__":
             online_memory_replay.add((state['image'], next_state['image'], action_index_comp, 0., done))
 
             if online_memory_replay.size() > 1280:
+                
+                # online_memory_replay.save('expert_buffer/online_sample_20')
+                # pdb.set_trace()
+                
                 if begin_learn is False:
                     print('learn begin!')
                     begin_learn = True
@@ -242,8 +244,8 @@ if __name__ == "__main__":
             state = next_state
         writer.add_scalar('episode reward', episode_reward, global_step=epoch)
         
-        if epoch % 1 == 0:
-            torch.save(onlineQNetwork.state_dict(), 'sqil-policy.para')
+        if epoch % 10 == 0:
+            # torch.save(onlineQNetwork.state_dict(), 'sqil-policy.para')
             print('Ep {}\tMoving average score: {:.2f}\t'.format(epoch, episode_reward))
             
 # online_weight = 1            
@@ -273,4 +275,18 @@ if __name__ == "__main__":
 # Ep 10   Moving average score: -2196.87
 # Ep 11   Moving average score: -1899.11
 # Ep 12   Moving average score: -1751.31
-        
+
+                                                                                                                                                                       
+# Ep 0    Moving average score: -2373.33                                                                                                                                                                                                       
+# Ep 1    Moving average score: -2434.99                                                                                                                                                                                                       
+# Ep 2    Moving average score: -2596.79                                                                                                                                                                                                       
+# Ep 3    Moving average score: -2816.03                                                                                                                                                                                                       
+# Ep 4    Moving average score: -2475.35                                                                                                                                                                                                       
+# Ep 5    Moving average score: -2716.96
+# Ep 6    Moving average score: -2702.79
+# Ep 7    Moving average score: -2384.88
+# Ep 8    Moving average score: -2605.64
+# Ep 9    Moving average score: -2588.97
+# Ep 10   Moving average score: -2628.37
+# Ep 11   Moving average score: -2726.78
+# Ep 12   Moving average score: -2521.64
